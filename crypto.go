@@ -2,7 +2,6 @@ package chefcrypto
 
 import (
 	"bytes"
-	"crypto/aes"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
@@ -77,23 +76,6 @@ func pkcs7Unpad(data []byte, blocklen int) ([]byte, error) {
 		if pad[i] != byte(padlen) {
 			return nil, fmt.Errorf("invalid padding")
 		}
-	}
-	return data[:len(data)-padlen], nil
-}
-
-var padPatterns [aes.BlockSize + 1][]byte
-
-// pkcs7Unpad returns slice of the original data without padding.
-func pkcs7Unpad2(data []byte) ([]byte, error) {
-	if len(data)%aes.BlockSize != 0 || len(data) == 0 {
-		return nil, fmt.Errorf("invalid data len %d", len(data))
-	}
-	padlen := int(data[len(data)-1])
-	if padlen > aes.BlockSize || padlen == 0 {
-		return nil, fmt.Errorf("invalid padding")
-	}
-	if !bytes.Equal(padPatterns[padlen], data[len(data)-padlen:]) {
-		return nil, fmt.Errorf("invalid padding")
 	}
 	return data[:len(data)-padlen], nil
 }
