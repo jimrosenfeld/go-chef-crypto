@@ -30,6 +30,8 @@ func (c *EncryptedDataBagV3) Decrypt(key []byte, target interface{}) error {
 		return fmt.Errorf("target must be a non-nil pointer")
 	} else if len(key) == 0 {
 		return fmt.Errorf("key must be a non-empty byte array")
+	} else if c.Cipher != CipherV3 {
+		return fmt.Errorf("invalid databag cipher %q, expected %q", c.Cipher, CipherV3)
 	}
 
 	var res map[string]interface{}
@@ -124,12 +126,12 @@ func EncryptDataBagV3(key, jsonData []byte) (*EncryptedDataBagV3, error) {
 	authTag := ciphertext[len(ciphertext)-gcmTagSize:]
 
 	// create a new v3 data bag and return it
-	secret := EncryptedDataBagV3{
+	databag := EncryptedDataBagV3{
 		EncryptedData: base64.StdEncoding.EncodeToString(encryptedData),
 		IV:            base64.StdEncoding.EncodeToString(nonce),
 		AuthTag:       base64.StdEncoding.EncodeToString(authTag),
 		Version:       3,
 		Cipher:        CipherV3,
 	}
-	return &secret, nil
+	return &databag, nil
 }
