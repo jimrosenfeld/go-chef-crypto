@@ -13,29 +13,86 @@ import (
 	"strings"
 )
 
-const gcmStandardNonceSize = 12
-const gcmTagSize = 16
+const (
+	// MinimumVersion is the minimum encryption version supported
+	MinimumVersion = 1
 
-// IsEncryptedDataBagItem determines if the databag is encrypted and if so what version
-func IsEncryptedDataBagItem(data []byte) (bool, int, *map[string]interface{}) {
-	var m map[string]interface{}
-	if err := json.Unmarshal(data, &m); err != nil {
-		return false, -1, &m
+	// MaximumVersion is the maximum encryption version supported
+	MaximumVersion = 3
+
+	// standard GCM sizes
+	gcmStandardNonceSize = 12
+	gcmTagSize           = 16
+)
+
+// EncryptedDataBagItem item interface
+type EncryptedDataBagItem interface {
+	Decrypt(key []byte, target interface{}) error
+	IsValid() bool
+	GetVersion() int
+}
+
+// Encrypt encrypts the data using the specified key and encryption version
+// for convienience -1 wil encrypt to the latest supported version
+func Encrypt(key, data []byte, version int) (EncryptedDataBagItem, error) {
+	switch version {
+	case 1:
+		return EncryptDataBagItemV1(key, data)
+	case 2:
+		return EncryptDataBagItemV2(key, data)
+	case 3, -1:
+		return EncryptDataBagItemV3(key, data)
+	default:
+		return nil, fmt.Errorf("unsupported encryption version")
+	}
+}
+
+// Decrypt decrypts the data bag item with the appropriate encryption version
+func Decrypt(key, data []byte, target interface{}) error {
+	encrypted, version := IsEncryptedDataBagItem(data)
+	if !encrypted {
+		return fmt.Errorf("data is not and encrypted data bag item")
 	}
 
-	// check the required keys
-	version, vOK := m["version"]
-	_, dOK := m["encrypted_data"]
-	_, iOK := m["iv"]
-	_, cOK := m["cipher"]
+	var item EncryptedDataBagItem
 
-	// if any of the fields are missing return false
-	if !vOK || !dOK || !iOK || !cOK {
-		return false, -1, nil
+	switch version {
+	case 1:
+		item = &EncryptedDataBagItemV1{}
+	case 2:
+		item = &EncryptedDataBagItemV2{}
+	case 3:
+		item = &EncryptedDataBagItemV3{}
+	default:
+		return fmt.Errorf("unsupported encrypted data bag item version %d", version)
+	}
+
+	err := json.Unmarshal(data, &item)
+	if err != nil {
+		return err
+	}
+	return item.Decrypt(key, target)
+}
+
+// IsEncryptedDataBagItem determines if the databag is encrypted and if so what version
+func IsEncryptedDataBagItem(data []byte) (bool, int) {
+	// decrypt data bag as a v1 since that contains all the
+	// basic fields for a data bag
+	var databag EncryptedDataBagItemV1
+	if err := json.Unmarshal(data, &databag); err != nil {
+		return false, -1
+	}
+
+	// check if item is a valid databag
+	if databag.EncryptedData == "" ||
+		databag.IV == "" ||
+		databag.Cipher == "" ||
+		!isValidVersion(databag.Version) {
+		return false, -1
 	}
 
 	// return true with the version and the map
-	return true, version.(int), &m
+	return true, databag.GetVersion()
 }
 
 // NewSecretKey generates a new secret key of specified length
@@ -123,4 +180,9 @@ func formatBase64(data []byte) string {
 	rx := regexp.MustCompile(`.{1,60}`)
 	blocks := rx.FindAllString(b64str, -1)
 	return fmt.Sprintf("%s\n", strings.Join(blocks, "\n"))
+}
+
+// checks if the version is within the valid range
+func isValidVersion(version int) bool {
+	return version >= MinimumVersion && version <= MaximumVersion
 }

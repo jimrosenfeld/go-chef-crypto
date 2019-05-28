@@ -19,6 +19,20 @@ type EncryptedDataBagItemV2 struct {
 	Cipher        string `json:"cipher"`
 }
 
+// IsValid validates the encrypted databag
+func (c *EncryptedDataBagItemV2) IsValid() bool {
+	return c.EncryptedData != "" &&
+		c.HMAC != "" &&
+		c.IV != "" &&
+		c.Version == 2 &&
+		c.Cipher == CipherV2
+}
+
+// GetVersion returns the databag version
+func (c *EncryptedDataBagItemV2) GetVersion() int {
+	return c.Version
+}
+
 // Decrypt decrypts the v2 databag
 func (c *EncryptedDataBagItemV2) Decrypt(key []byte, target interface{}) error {
 	tgtVal := reflect.ValueOf(target)
