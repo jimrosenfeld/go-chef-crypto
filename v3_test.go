@@ -6,14 +6,12 @@ import (
 	"testing"
 )
 
-var data1 = `{"foo":"bar"}`
-
-func TestV3(t *testing.T) {
+func TestV3Full(t *testing.T) {
 	// generate a key for encryption
 	key, _ := NewSecretKey(512)
 
 	// encrypt the data
-	databag, err := EncryptDataBagV3(key, []byte(data1))
+	databag, err := EncryptDataBagItemV3(key, []byte(data1))
 	if err != nil {
 		t.Errorf("%v", err)
 		return
@@ -37,5 +35,24 @@ func TestV3(t *testing.T) {
 	}
 	if !reflect.DeepEqual(value, check) {
 		t.Error("decrypted data did not match source")
+		return
+	}
+}
+
+func TestV3Decrypt(t *testing.T) {
+	var databag EncryptedDataBagItemV3
+	var value interface{}
+	if err := json.Unmarshal([]byte(testDataBagV3), &databag); err != nil {
+		t.Error("failed to unmarshal v3 data bag")
+		return
+	}
+
+	if err := databag.Decrypt([]byte(testSecretKey), &value); err != nil {
+		t.Error("failed to decrypt v3 data bag")
+		return
+	}
+	if value.(string) != "Hello, World!" {
+		t.Error("invalid data bag data")
+		return
 	}
 }

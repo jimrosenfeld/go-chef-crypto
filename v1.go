@@ -14,8 +14,8 @@ import (
 // CipherV1 the v1 cipher used
 const CipherV1 = "aes-256-cbc"
 
-// EncryptedDataBagV1 version 1 encrypted databag
-type EncryptedDataBagV1 struct {
+// EncryptedDataBagItemV1 version 1 encrypted databag
+type EncryptedDataBagItemV1 struct {
 	EncryptedData string `json:"encrypted_data"`
 	IV            string `json:"iv"`
 	Version       int    `json:"version"`
@@ -23,14 +23,14 @@ type EncryptedDataBagV1 struct {
 }
 
 // Decrypt decrypts the v1 databag
-func (c *EncryptedDataBagV1) Decrypt(key []byte, target interface{}) error {
+func (c *EncryptedDataBagItemV1) Decrypt(key []byte, target interface{}) error {
 	tgtVal := reflect.ValueOf(target)
 	if tgtVal.Kind() != reflect.Ptr || tgtVal.IsNil() {
 		return fmt.Errorf("target must be a non-nil pointer")
 	} else if len(key) == 0 {
 		return fmt.Errorf("key must be a non-empty byte array")
-	} else if c.Cipher != CipherV2 {
-		return fmt.Errorf("invalid databag cipher %q, expected %q", c.Cipher, CipherV2)
+	} else if c.Cipher != CipherV1 {
+		return fmt.Errorf("invalid databag cipher %q, expected %q", c.Cipher, CipherV1)
 	}
 
 	var res map[string]interface{}
@@ -81,8 +81,8 @@ func (c *EncryptedDataBagV1) Decrypt(key []byte, target interface{}) error {
 	return nil
 }
 
-// EncryptDataBagV1 encrypts a databag with the v1 specification
-func EncryptDataBagV1(key, jsonData []byte) (*EncryptedDataBagV1, error) {
+// EncryptDataBagItemV1 encrypts a databag with the v1 specification
+func EncryptDataBagItemV1(key, jsonData []byte) (*EncryptedDataBagItemV1, error) {
 	keyHash := hashKey(key)
 
 	// create a new AES cipher
@@ -110,9 +110,9 @@ func EncryptDataBagV1(key, jsonData []byte) (*EncryptedDataBagV1, error) {
 	aescbc.CryptBlocks(ciphertext, ciphertext)
 
 	// create the databag
-	databag := EncryptedDataBagV1{
-		EncryptedData: base64.StdEncoding.EncodeToString(ciphertext),
-		IV:            base64.StdEncoding.EncodeToString(iv),
+	databag := EncryptedDataBagItemV1{
+		EncryptedData: formatBase64(ciphertext),
+		IV:            formatBase64(iv),
 		Version:       1,
 		Cipher:        CipherV1,
 	}

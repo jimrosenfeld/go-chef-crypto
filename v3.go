@@ -14,8 +14,8 @@ import (
 // CipherV3 the v3 cipher used
 const CipherV3 = "aes-256-gcm"
 
-// EncryptedDataBagV3 version 3 encrypted databag
-type EncryptedDataBagV3 struct {
+// EncryptedDataBagItemV3 version 3 encrypted databag
+type EncryptedDataBagItemV3 struct {
 	EncryptedData string `json:"encrypted_data"`
 	IV            string `json:"iv"`
 	AuthTag       string `json:"auth_tag"`
@@ -24,7 +24,7 @@ type EncryptedDataBagV3 struct {
 }
 
 // Decrypt decrypts the v3 databag
-func (c *EncryptedDataBagV3) Decrypt(key []byte, target interface{}) error {
+func (c *EncryptedDataBagItemV3) Decrypt(key []byte, target interface{}) error {
 	tgtVal := reflect.ValueOf(target)
 	if tgtVal.Kind() != reflect.Ptr || tgtVal.IsNil() {
 		return fmt.Errorf("target must be a non-nil pointer")
@@ -91,8 +91,8 @@ func (c *EncryptedDataBagV3) Decrypt(key []byte, target interface{}) error {
 	return nil
 }
 
-// EncryptDataBagV3 encrypts a databag with the v1 specification
-func EncryptDataBagV3(key, jsonData []byte) (*EncryptedDataBagV3, error) {
+// EncryptDataBagItemV3 encrypts a databag with the v1 specification
+func EncryptDataBagItemV3(key, jsonData []byte) (*EncryptedDataBagItemV3, error) {
 	keyHash := hashKey(key)
 
 	// create a new AES cipher
@@ -126,10 +126,10 @@ func EncryptDataBagV3(key, jsonData []byte) (*EncryptedDataBagV3, error) {
 	authTag := ciphertext[len(ciphertext)-gcmTagSize:]
 
 	// create a new v3 data bag and return it
-	databag := EncryptedDataBagV3{
-		EncryptedData: base64.StdEncoding.EncodeToString(encryptedData),
-		IV:            base64.StdEncoding.EncodeToString(nonce),
-		AuthTag:       base64.StdEncoding.EncodeToString(authTag),
+	databag := EncryptedDataBagItemV3{
+		EncryptedData: formatBase64(encryptedData),
+		IV:            formatBase64(nonce),
+		AuthTag:       formatBase64(authTag),
 		Version:       3,
 		Cipher:        CipherV3,
 	}
