@@ -39,11 +39,11 @@ func (c *EncryptedDataBagItemV1) GetVersion() int {
 func (c *EncryptedDataBagItemV1) Decrypt(key []byte, target interface{}) error {
 	tgtVal := reflect.ValueOf(target)
 	if tgtVal.Kind() != reflect.Ptr || tgtVal.IsNil() {
-		return fmt.Errorf("target must be a non-nil pointer")
+		return ErrInvalidTarget
 	} else if len(key) == 0 {
-		return fmt.Errorf("key must be a non-empty byte array")
+		return ErrInvalidSecretKey
 	} else if c.Cipher != CipherV1 {
-		return fmt.Errorf("invalid databag cipher %q, expected %q", c.Cipher, CipherV1)
+		return fmt.Errorf("invalid data bag cipher: expected %q, got %q", CipherV1, c.Cipher)
 	}
 
 	var res map[string]interface{}
@@ -86,7 +86,7 @@ func (c *EncryptedDataBagItemV1) Decrypt(key []byte, target interface{}) error {
 	// look for the json wrapper
 	val, ok := res["json_wrapper"]
 	if !ok {
-		return fmt.Errorf("failed to decrypt databag")
+		return ErrDecryptFailed
 	}
 
 	// assign the value to the target

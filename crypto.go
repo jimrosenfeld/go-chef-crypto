@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"regexp"
@@ -37,6 +38,24 @@ const (
 	gcmTagSize           = 16
 )
 
+// ErrItemNotValid invalid data bag
+var ErrItemNotValid = errors.New("data is not an encrypted data bag item")
+
+// ErrUnsupportedVersion unsupported encryption version
+var ErrUnsupportedVersion = errors.New("unsupported encryption version")
+
+// ErrInvalidTarget invalid target pointer
+var ErrInvalidTarget = errors.New("target must be a non-nil pointer")
+
+// ErrInvalidSecretKey invalid secret key
+var ErrInvalidSecretKey = errors.New("key must be a non-empty byte array")
+
+// ErrDecryptFailed decryption failed
+var ErrDecryptFailed = errors.New("failed to decrypt data bag")
+
+// ErrSignatureValidationFailed hmac validation failed
+var ErrSignatureValidationFailed = errors.New("signature validation failed, an invalid secret key was most likely used")
+
 // EncryptedDataBagItem item interface
 type EncryptedDataBagItem interface {
 	Decrypt(key []byte, target interface{}) error
@@ -54,15 +73,15 @@ func Encrypt(key, data []byte, version int) (EncryptedDataBagItem, error) {
 	case Version3:
 		return EncryptDataBagItemV3(key, data)
 	default:
-		return nil, fmt.Errorf("unsupported encryption version")
+		return nil, ErrUnsupportedVersion
 	}
 }
 
 // Decrypt decrypts the data bag item with the appropriate encryption version
 func Decrypt(key, data []byte, target interface{}) error {
-	encrypted, version := IsEncryptedDataBagItem(data)
-	if !encrypted {
-		return fmt.Errorf("data is not and encrypted data bag item")
+	encrypted, version, err := IsEncryptedDataBagItem(data)
+	if err != nil || !encrypted {
+		return ErrItemNotValid
 	}
 
 	var item EncryptedDataBagItem
@@ -75,23 +94,23 @@ func Decrypt(key, data []byte, target interface{}) error {
 	case Version3:
 		item = &EncryptedDataBagItemV3{}
 	default:
-		return fmt.Errorf("unsupported encrypted data bag item version %d", version)
+		return ErrUnsupportedVersion
 	}
 
-	err := json.Unmarshal(data, &item)
-	if err != nil {
+	if err := json.Unmarshal(data, &item); err != nil {
 		return err
 	}
+
 	return item.Decrypt(key, target)
 }
 
 // IsEncryptedDataBagItem determines if the databag is encrypted and if so what version
-func IsEncryptedDataBagItem(data []byte) (bool, int) {
+func IsEncryptedDataBagItem(data []byte) (bool, int, error) {
 	// decrypt data bag as a v1 since that contains all the
 	// basic fields for a data bag
 	var databag EncryptedDataBagItemV1
 	if err := json.Unmarshal(data, &databag); err != nil {
-		return false, -1
+		return false, -1, err
 	}
 
 	// check if item is a valid databag
@@ -99,11 +118,11 @@ func IsEncryptedDataBagItem(data []byte) (bool, int) {
 		databag.IV == "" ||
 		databag.Cipher == "" ||
 		!isValidVersion(databag.Version) {
-		return false, -1
+		return false, -1, ErrItemNotValid
 	}
 
 	// return true with the version and the map
-	return true, databag.GetVersion()
+	return true, databag.GetVersion(), nil
 }
 
 // NewSecretKey generates a new secret key of specified length

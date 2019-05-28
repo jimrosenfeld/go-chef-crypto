@@ -37,11 +37,11 @@ func (c *EncryptedDataBagItemV2) GetVersion() int {
 func (c *EncryptedDataBagItemV2) Decrypt(key []byte, target interface{}) error {
 	tgtVal := reflect.ValueOf(target)
 	if tgtVal.Kind() != reflect.Ptr || tgtVal.IsNil() {
-		return fmt.Errorf("target must be a non-nil pointer")
+		return ErrInvalidTarget
 	} else if len(key) == 0 {
-		return fmt.Errorf("key must be a non-empty byte array")
+		return ErrInvalidSecretKey
 	} else if c.Cipher != CipherV2 {
-		return fmt.Errorf("invalid databag cipher %q, expected %q", c.Cipher, CipherV2)
+		return fmt.Errorf("invalid data bag cipher: expected %q, got %q", CipherV2, c.Cipher)
 	}
 
 	keyHash := hashKey(key)
@@ -57,8 +57,9 @@ func (c *EncryptedDataBagItemV2) Decrypt(key []byte, target interface{}) error {
 		return err
 	}
 
+	// validate the expected hmac against the provided
 	if !hmac.Equal(hmacCheck, hmacEnc) {
-		return fmt.Errorf("the hmac could not be validated")
+		return ErrSignatureValidationFailed
 	}
 
 	// since v1 and v2 are the same except the hmac validation
