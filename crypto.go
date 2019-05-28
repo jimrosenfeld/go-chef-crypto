@@ -29,8 +29,8 @@ const (
 	// Version3 version 3 encrypted data bag item
 	Version3 = 3
 
-	// VersionLatest latest version supported
-	VersionLatest = -1
+	// VersionLatest latest version supported currently 3
+	VersionLatest = 3
 
 	// standard GCM sizes
 	gcmStandardNonceSize = 12
@@ -45,14 +45,13 @@ type EncryptedDataBagItem interface {
 }
 
 // Encrypt encrypts the data using the specified key and encryption version
-// for convienience -1 wil encrypt to the latest supported version
 func Encrypt(key, data []byte, version int) (EncryptedDataBagItem, error) {
 	switch version {
 	case Version1:
 		return EncryptDataBagItemV1(key, data)
 	case Version2:
 		return EncryptDataBagItemV2(key, data)
-	case Version3, VersionLatest:
+	case Version3:
 		return EncryptDataBagItemV3(key, data)
 	default:
 		return nil, fmt.Errorf("unsupported encryption version")
