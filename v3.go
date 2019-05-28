@@ -28,7 +28,7 @@ func (c *EncryptedDataBagItemV3) IsValid() bool {
 	return c.EncryptedData != "" &&
 		c.AuthTag != "" &&
 		c.IV != "" &&
-		c.Version == 3 &&
+		c.Version == Version3 &&
 		c.Cipher == CipherV3
 }
 
@@ -144,7 +144,7 @@ func EncryptDataBagItemV3(key, jsonData []byte) (*EncryptedDataBagItemV3, error)
 		EncryptedData: formatBase64(encryptedData),
 		IV:            formatBase64(nonce),
 		AuthTag:       formatBase64(authTag),
-		Version:       3,
+		Version:       Version3,
 		Cipher:        CipherV3,
 	}
 	return &databag, nil

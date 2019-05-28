@@ -26,7 +26,7 @@ type EncryptedDataBagItemV1 struct {
 func (c *EncryptedDataBagItemV1) IsValid() bool {
 	return c.EncryptedData != "" &&
 		c.IV != "" &&
-		c.Version == 1 &&
+		c.Version == Version1 &&
 		c.Cipher == CipherV1
 }
 
@@ -126,7 +126,7 @@ func EncryptDataBagItemV1(key, jsonData []byte) (*EncryptedDataBagItemV1, error)
 	databag := EncryptedDataBagItemV1{
 		EncryptedData: formatBase64(ciphertext),
 		IV:            formatBase64(iv),
-		Version:       1,
+		Version:       Version1,
 		Cipher:        CipherV1,
 	}
 

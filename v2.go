@@ -24,7 +24,7 @@ func (c *EncryptedDataBagItemV2) IsValid() bool {
 	return c.EncryptedData != "" &&
 		c.HMAC != "" &&
 		c.IV != "" &&
-		c.Version == 2 &&
+		c.Version == Version2 &&
 		c.Cipher == CipherV2
 }
 
@@ -66,7 +66,7 @@ func (c *EncryptedDataBagItemV2) Decrypt(key []byte, target interface{}) error {
 	databag := EncryptedDataBagItemV1{
 		EncryptedData: c.EncryptedData,
 		IV:            c.IV,
-		Version:       1,
+		Version:       Version1,
 		Cipher:        CipherV1,
 	}
 
@@ -93,7 +93,7 @@ func EncryptDataBagItemV2(key, data []byte) (*EncryptedDataBagItemV2, error) {
 		EncryptedData: d.EncryptedData,
 		HMAC:          formatBase64(h),
 		IV:            d.IV,
-		Version:       2,
+		Version:       Version2,
 		Cipher:        CipherV2,
 	}
 

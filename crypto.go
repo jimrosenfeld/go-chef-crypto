@@ -20,6 +20,18 @@ const (
 	// MaximumVersion is the maximum encryption version supported
 	MaximumVersion = 3
 
+	// Version1 version 1 encrypted data bag item
+	Version1 = 1
+
+	// Version2 version 2 encrypted data bag item
+	Version2 = 2
+
+	// Version3 version 3 encrypted data bag item
+	Version3 = 3
+
+	// VersionLatest latest version supported
+	VersionLatest = -1
+
 	// standard GCM sizes
 	gcmStandardNonceSize = 12
 	gcmTagSize           = 16
@@ -36,11 +48,11 @@ type EncryptedDataBagItem interface {
 // for convienience -1 wil encrypt to the latest supported version
 func Encrypt(key, data []byte, version int) (EncryptedDataBagItem, error) {
 	switch version {
-	case 1:
+	case Version1:
 		return EncryptDataBagItemV1(key, data)
-	case 2:
+	case Version2:
 		return EncryptDataBagItemV2(key, data)
-	case 3, -1:
+	case Version3, VersionLatest:
 		return EncryptDataBagItemV3(key, data)
 	default:
 		return nil, fmt.Errorf("unsupported encryption version")
@@ -57,11 +69,11 @@ func Decrypt(key, data []byte, target interface{}) error {
 	var item EncryptedDataBagItem
 
 	switch version {
-	case 1:
+	case Version1:
 		item = &EncryptedDataBagItemV1{}
-	case 2:
+	case Version2:
 		item = &EncryptedDataBagItemV2{}
-	case 3:
+	case Version3:
 		item = &EncryptedDataBagItemV3{}
 	default:
 		return fmt.Errorf("unsupported encrypted data bag item version %d", version)
