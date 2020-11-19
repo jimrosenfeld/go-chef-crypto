@@ -85,7 +85,7 @@ func (c *EncryptedDataBagItemV3) Decrypt(key []byte, target interface{}) error {
 	// decrypt the data
 	decrypted, err := aesgcm.Open(nil, nonce, ciphertext, nil)
 	if err != nil {
-		return nil
+		return err
 	}
 
 	// unmarshal the json
